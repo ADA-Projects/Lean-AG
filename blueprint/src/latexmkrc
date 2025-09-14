@@ -1,0 +1,9 @@
+# This file configures the latexmk command you can use to compile
+# the pdf version of the blueprint
+$pdf_mode = 1;
+$pdflatex = 'xelatex -synctex=1 -interaction=nonstopmode';
+$biber = 'biber %O --bblencoding=utf8 -u -U --output_safechars %S';
+$bibtex_use = 2;  # Use biber instead of bibtex
+$max_repeat = 5;
+$ENV{'BIBINPUTS'} = '.:./src/:'; # Help biber find bibliography files
+@default_files = ('print.tex');
