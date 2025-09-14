@@ -1,0 +1,30 @@
+% This file makes a web version of the blueprint
+% It should include all the \usepackage needed for this version.
+% The template includes standard AMS packages.
+% It is otherwise a very minimal preamble (you should probably at least
+% add cleveref and tikz-cd).
+
+\documentclass{article}
+
+\usepackage{amssymb, amsthm, amsmath}
+\usepackage{hyperref}
+\usepackage[showmore, dep_graph]{blueprint}
+\usepackage[style=alphabetic, backend=biber, useprefix, hyperref, maxnames=5]{biblatex}
+
+\addbibresource{bibliography.bib}
+
+
+\input{macros/common}
+\input{macros/web}
+
+\home{https://github.com/ADA-Projects/Goertz-Wedhorn-Lean4}
+\github{https://github.com/ADA-Projects/Goertz-Wedhorn-Lean4}
+\dochome{https://ADA-Projects.github.io/Goertz-Wedhorn-Lean4/docs}
+
+\title{GWchap5}
+\author{Alessandro D'Angelo}
+
+\begin{document}
+\maketitle
+\input{content}
+\end{document}

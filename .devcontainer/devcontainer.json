@@ -1,0 +1,18 @@
+{
+  "name": "Lean 4 Development",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "leanprover.lean4",
+        "ms-python.python"
+      ]
+    }
+  },
+  "forwardPorts": [8000],
+  "postCreateCommand": [
+    "bash",
+    "-c",
+    "curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y && echo 'export PATH=\"$HOME/.elan/bin:$PATH\"' >> ~/.bashrc"
+  ]
+}
