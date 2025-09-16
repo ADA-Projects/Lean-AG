@@ -26,6 +26,7 @@ rev = "v4.21.0"
 # git = "https://github.com/lean-dojo/LeanCopilot.git"
 # rev = "v4.21.0" # Use the version matching your lean-toolchain file
 
+
 [[lean_lib]]
 name = "GWchap5"
 # moreLinkArgs = ["-L./.lake/packages/LeanCopilot/.lake/build/lib", "-lctranslate2"]

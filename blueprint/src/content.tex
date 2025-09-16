@@ -1,0 +1,54 @@
+% In this file you should put the actual content of the blueprint.
+% It will be used both by the web and the print version.
+% It should *not* include the \begin{document}
+%
+% If you want to split the blueprint content into several files then
+% the current file can be a simple sequence of \input. Otherwise It
+% can start with a \section or \chapter for instance.
+
+\section{Introduction}
+
+This is part of a personal self-study project to learn how to do formal proofs in Lean4.
+
+\section{GW Sect 5.3}
+
+\subsection{Helper Lemmas}
+
+We first need a key result about continuous maps preserving irreducibility from the Stacks Project (cf. \cite[\href{https://stacks.math.columbia.edu/tag/0379}{Lemma 0379}]{stacks-project}):
+
+\begin{lemma}
+\label{stacks_irreducible_preservation}
+Let $f : X \to Y$ be a continuous map of topological spaces. If $E \subset X$ is an irreducible subset, then $f(E) \subset Y$ is irreducible as well.
+\end{lemma}
+
+\begin{proof}
+Clearly we may assume $E = X$ (i.e., $X$ irreducible) and $f(E) = Y$ (i.e., $f$ surjective). First, $Y \neq \emptyset$ since $X \neq \emptyset$. Next, assume $Y = Y_1 \cup Y_2$ with $Y_1, Y_2$ closed. Then $X = X_1 \cup X_2$ with $X_i = f^{-1}(Y_i)$ closed in $X$. By assumption on $X$, we must have $X = X_1$ or $X = X_2$, hence $Y = Y_1$ or $Y = Y_2$ since $f$ is surjective.
+\end{proof}
+
+\subsection{Main Result}
+
+The following is copied from \cite[Lemma 5.7]{Gortz_Wedhorn_2nd_Ed}:
+\begin{lemma}
+\label{thm_scheme_dim}
+Let $X$ be a topological space.
+\begin{enumerate}
+    \item Let $Y$ be a subspace of $X$. Then $\dim Y \leq \dim X$. If $X$ is irreducible, $\dim X < \infty$, and $Y \subsetneq X$ is a proper closed subset, then $\dim Y < \dim X$.
+
+    \item Let $X = \bigcup_{\alpha} U_{\alpha}$ be an open covering. Then
+    \[\dim X = \sup_{\alpha} \dim U_{\alpha}.\]
+
+    \item Let $I$ be the set of irreducible components of $X$. Then
+    \[\dim X = \sup_{Y \in I} \dim Y.\]
+
+    \item Let $X$ be a scheme. Then
+    \[\dim X = \sup_{x \in X} \dim \mathcal{O}_{X,x}.\]
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+(1). If $Z$ is an irreducible closed subset of $Y$ its closure $\overline{Z}$ in $X$ is irreducible and $\overline{Z} \cap Y = Z$. This shows the first assertion of (1). The second follows as every chain inside $Y$ can be enlarged to a chain inside $X$ by adding $X$.
+
+(2). Let $Z_0 \subseteq Z_1 \subseteq \cdots \subseteq Z_l$ be a chain of irreducible closed subsets of $X$. Then there exists $U_{\alpha}$ such that $U_{\alpha} \cap Z_l \neq \emptyset$. Then $\emptyset \neq U_{\alpha} \cap Z_i$ is open in $Z_i$ and hence irreducible and closed in $U_{\alpha}$. Moreover the closure of $U_{\alpha} \cap Z_i$ in $X$ is $Z_i$ and thus the $Z_i \cap U_{\alpha}$ form a chain of length $l$ in $U_{\alpha}$. This shows that $\sup_{\alpha} \dim U_{\alpha} \geq \dim X$. The converse inequality follows from (1).
+
+Assertion (3) is clear and for the last assertion we may assume that $X = \operatorname{Spec} A$ is affine by (2). But in this case $\dim \mathcal{O}_{X,x}$ is the supremum of the length of chains of prime ideals of $A$ ending in $\mathfrak{p}_x$.
+\end{proof}
