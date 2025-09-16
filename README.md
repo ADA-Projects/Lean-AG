@@ -146,6 +146,7 @@ While this is primarily a portfolio project, I welcome:
 - Ulrich Görtz and Torsten Wedhorn, *"Algebraic Geometry I"*, 2nd Edition, Springer (2020)
 - [Mathlib Community](https://leanprover-community.github.io/) for the extensive mathematics library
 - [Lean 4 Manual](https://lean-lang.org/lean4/doc/) for language documentation
+- [Pietro Monticone's LeanProject template](https://github.com/pitmonticone/LeanProject) for the project structure and blueprint configuration
 
 ---
 
