@@ -18,83 +18,40 @@ import Mathlib.Topology.Irreducible
 # Krull dimension of topological subspaces
 
 This file establishes fundamental properties of topological Krull dimension for subspaces,
-proper closed subsets, open coverings, irreducible components, and schemes.
-
-The topological Krull dimension of a topological space is defined as the Krull dimension of the
-poset of irreducible closed subsets. This file proves several key relationships between
-dimensions of spaces and their subspaces.
+proper closed subsets, open coverings, irreducible components, and schemes. The topological Krull
+dimension of a topological space is defined as the Krull dimension of the poset of irreducible
+closed subsets. This file proves several key relationships between dimensions of spaces and their
+subspaces.
 
 ## Main results
 
-- `topKrullDim_subspace_le`: For any subspace $Y \subseteq X$, we have $\dim(Y) \leq \dim(X)$
-- `topological_dim_proper_closed_subset_lt`: For a proper closed subset $Y \subsetneq X$
-  of an irreducible space with finite dimension, $\dim(Y) < \dim(X)$
-- `topological_dim_open_cover`: For an open cover $X = \bigcup_i U_i$,
-  $\dim(X) = \sup_i \dim(U_i)$
+- `topologicalKrullDim_subspace_le`: For any subspace Y ⊆ X, we have dim(Y) ≤ dim(X)
+- `topological_dim_proper_closed_subset_lt`: For a proper closed subset Y ⊊ X
+  of an irreducible space with finite dimension, dim(Y) < dim(X)
+- `topological_dim_open_cover`: For an open cover X = ⋃ᵢ Uᵢ,
+  dim(X) = sup_i dim(Uᵢ)
 - `topological_dim_irreducible_components`:
-  $\dim(X) = \sup_{Y \in \text{IrredComponents}(X)} \dim(Y)$
-- `scheme_dim_eq_sup_local_rings`: For a scheme $X$,
-  $\dim(X) = \sup_{x \in X} \dim(\mathcal{O}_{X,x})$
+  dim(X) = sup_{Y ∈ IrredComponents(X)} dim(Y)
+- `scheme_dim_eq_sup_local_rings`: For a scheme X,
+  dim(X) = sup_{x ∈ X} dim(𝒪_{X,x})
 
 ## Implementation notes
 
-The proofs use order-preserving maps between posets of irreducible closed sets to establish
-dimension inequalities. The key technical lemma shows that the closure operation provides
-an injective strictly monotone map from irreducible closed sets of a subspace to those of
-the ambient space.
+The key technical tool is a strictly monotone map between the posets of irreducible closed sets,
+generalized from subspace inclusions to any topological embedding. This allows us to establish
+dimension inequalities.
 
 ## Tags
 
 Krull dimension, topological dimension, schemes, irreducible components, dimension theory
 -/
 
-open Set Function Order TopologicalSpace AlgebraicGeometry
+open Set Function Order Topology TopologicalSpace AlgebraicGeometry
 
 variable {X : Type*} [TopologicalSpace X]
 
-/-! ### Maps between irreducible closed sets -/
-
-/-- The canonical map from irreducible closed sets of a subspace `Y` to irreducible
-closed sets of the ambient space `X`, defined by taking the closure of the image
-under the inclusion map. This map is crucial for comparing Krull dimensions. -/
-def mapIrreducibleClosed (Y : Set X) (c : IrreducibleCloseds Y) : IrreducibleCloseds X where
-  carrier := closure (Subtype.val '' c.carrier)
-  is_irreducible' := c.is_irreducible'.image Subtype.val
-    (continuous_subtype_val.continuousOn) |>.closure
-  is_closed' := isClosed_closure
-
-/-- The map `mapIrreducibleClosed` is injective, meaning distinct irreducible
-closed sets in a subspace map to distinct irreducible closed sets in the ambient space.
-This ensures that the dimension-preserving properties hold. -/
-lemma mapIrreducibleClosed_injective (Y : Set X) :
-    Function.Injective (mapIrreducibleClosed Y) := by
-  intro A B h_images_eq
-  ext x
-  have h_closures_eq : closure (Subtype.val '' A.carrier) =
-      closure (Subtype.val '' B.carrier) :=
-    congrArg IrreducibleCloseds.carrier h_images_eq
-  constructor
-  · -- Forward direction: x ∈ A → x ∈ B
-    intro hx_in_A
-    change x ∈ B.carrier
-    -- Use the mathlib lemma for embeddings
-    rw [← B.is_closed'.closure_eq,
-        Topology.IsEmbedding.subtypeVal.closure_eq_preimage_closure_image,
-        ← h_closures_eq]
-    simp_rw [mem_preimage]
-    exact subset_closure (mem_image_of_mem Subtype.val hx_in_A)
-  · -- Backward direction: x ∈ B → x ∈ A
-    intro hx_in_B
-    change x ∈ A.carrier
-    -- Use the mathlib lemma for embeddings
-    rw [← A.is_closed'.closure_eq,
-        Topology.IsEmbedding.subtypeVal.closure_eq_preimage_closure_image,
-        h_closures_eq]
-    simp_rw [mem_preimage]
-    exact subset_closure (mem_image_of_mem Subtype.val hx_in_B)
-
-
-/-! ### Partial order structure on irreducible closed sets -/
+/-!
+### Partial order structure on irreducible closed sets -/
 
 instance : PartialOrder (IrreducibleCloseds X) where
   le s t := s.carrier ⊆ t.carrier
@@ -120,45 +77,97 @@ lemma IrreducibleCloseds.lt_iff_subset {s t : IrreducibleCloseds X} :
   · intro h_ssubset
     rw [lt_iff_le_and_ne]
     rcases h_ssubset with ⟨h_subset, h_ne_carrier⟩
-    constructor
-    · rwa [IrreducibleCloseds.le_iff_subset]
-    · intro h_s_eq_t
-      apply h_ne_carrier
-      rw [h_s_eq_t]
+    exact ⟨by rwa [IrreducibleCloseds.le_iff_subset],
+      fun h_s_eq_t => h_ne_carrier (by rw [h_s_eq_t])⟩
 
-/-- The canonical map `mapIrreducibleClosed` is strictly monotone, preserving
-the order structure when comparing irreducible closed sets between subspaces
-and ambient spaces. This is essential for the dimension inequality theorem. -/
-lemma mapIrreducibleClosed_strictMono (Y : Set X) :
-    StrictMono (mapIrreducibleClosed Y) := by
+/-!
+### Dimension inequalities for embeddings
+
+This section generalizes the map on irreducible closed sets to any topological embedding.
+This provides a more abstract foundation for the subspace dimension inequality and clarifies
+the relationship with `mathlib`'s existing `IsClosedEmbedding.topologicalKrullDim_le`, which
+corresponds to the special case of closed subspaces.
+-/
+
+variable {Y : Type*} [TopologicalSpace Y]
+
+/-- The map on irreducible closed sets induced by an embedding `f`.
+This is a generalization of `IrreducibleCloseds.map` for embeddings that are not necessarily
+closed. We take the closure of the image to ensure the result is a closed set. -/
+def IrreducibleCloseds.mapOfEmbedding {f : Y → X} (hf : IsEmbedding f)
+    (c : IrreducibleCloseds Y) : IrreducibleCloseds X where
+  carrier := closure (f '' c.carrier)
+  is_irreducible' := c.is_irreducible'.image f (hf.continuous.continuousOn) |>.closure
+  is_closed' := isClosed_closure
+
+/-- The map `IrreducibleCloseds.mapOfEmbedding` is injective.
+This relies on the property of embeddings that a closed set in the domain is the preimage
+of the closure of its image. -/
+lemma IrreducibleCloseds.mapOfEmbedding_injective {f : Y → X} (hf : IsEmbedding f) :
+    Function.Injective (IrreducibleCloseds.mapOfEmbedding hf) := by
+  intro A B h_images_eq
+  ext x
+  have h_closures_eq : closure (f '' A.carrier) = closure (f '' B.carrier) :=
+    congrArg IrreducibleCloseds.carrier h_images_eq
+  exact ⟨fun hx_in_A => by
+    change x ∈ B.carrier
+    rw [← B.is_closed'.closure_eq, hf.closure_eq_preimage_closure_image, ← h_closures_eq]
+    simp_rw [mem_preimage]
+    exact subset_closure (mem_image_of_mem f hx_in_A),
+  fun hx_in_B => by
+    change x ∈ A.carrier
+    rw [← A.is_closed'.closure_eq, hf.closure_eq_preimage_closure_image, h_closures_eq]
+    simp_rw [mem_preimage]
+    exact subset_closure (mem_image_of_mem f hx_in_B)⟩
+
+/-- The map `IrreducibleCloseds.mapOfEmbedding` is strictly monotone. -/
+lemma IrreducibleCloseds.mapOfEmbedding_strictMono {f : Y → X} (hf : IsEmbedding f) :
+    StrictMono (IrreducibleCloseds.mapOfEmbedding hf) := by
   intro A B h_less_AB
-  constructor
-  · -- Part 1: Prove map A ≤ map B
-    apply closure_mono
-    apply image_subset
-    exact le_of_lt h_less_AB
-  · -- Part 2: Prove ¬(map B ≤ map A)
-    intro h_contra_le
-    have h_forward_subset : (mapIrreducibleClosed Y A).carrier ⊆
-        (mapIrreducibleClosed Y B).carrier := by
-      apply closure_mono
-      apply image_subset
-      exact le_of_lt h_less_AB
-    have h_carrier_eq : (mapIrreducibleClosed Y A).carrier = (mapIrreducibleClosed Y B).carrier :=
-      Subset.antisymm h_forward_subset h_contra_le
-    have h_A_eq_B : A = B :=
-      mapIrreducibleClosed_injective Y (IrreducibleCloseds.ext h_carrier_eq)
-    exact (ne_of_lt h_less_AB) h_A_eq_B
+  rw [IrreducibleCloseds.lt_iff_subset] at h_less_AB ⊢
+  exact ⟨closure_mono (image_subset _ (subset_of_ssubset h_less_AB)), fun h_contra_subset =>
+    (ne_of_lt (IrreducibleCloseds.lt_iff_subset.mpr h_less_AB))
+    (IrreducibleCloseds.mapOfEmbedding_injective hf (IrreducibleCloseds.ext
+      (Subset.antisymm (closure_mono (image_subset _ (subset_of_ssubset h_less_AB)))
+        h_contra_subset)))⟩
 
-/-! ### Main dimension theorems -/
+/-- If `f : Y → X` is an embedding, then `dim(Y) ≤ dim(X)`.
+This generalizes `IsClosedEmbedding.topologicalKrullDim_le`. -/
+theorem IsEmbedding.topologicalKrullDim_le {f : Y → X} (hf : IsEmbedding f) :
+    topologicalKrullDim Y ≤ topologicalKrullDim X :=
+  krullDim_le_of_strictMono _ (IrreducibleCloseds.mapOfEmbedding_strictMono hf)
+
+
+
+/-!
+### Maps between irreducible closed sets of a subspace -/
+
+/-- The canonical map from irreducible closed sets of a subspace `Y` to irreducible
+closed sets of the ambient space `X`, defined by taking the closure of the image
+under the inclusion map. This is an instance of `IrreducibleCloseds.mapOfEmbedding`. -/
+def mapIrreducibleClosed (Y : Set X) : IrreducibleCloseds Y → IrreducibleCloseds X :=
+  IrreducibleCloseds.mapOfEmbedding IsEmbedding.subtypeVal
+
+/-- The map `mapIrreducibleClosed` is injective, as it's induced by an embedding. -/
+lemma mapIrreducibleClosed_injective (Y : Set X) :
+    Function.Injective (mapIrreducibleClosed Y) :=
+  IrreducibleCloseds.mapOfEmbedding_injective IsEmbedding.subtypeVal
+
+/-- The canonical map `mapIrreducibleClosed` is strictly monotone. -/
+lemma mapIrreducibleClosed_strictMono (Y : Set X) :
+    StrictMono (mapIrreducibleClosed Y) :=
+  IrreducibleCloseds.mapOfEmbedding_strictMono IsEmbedding.subtypeVal
+
+
+/-!
+### Main dimension theorems -/
 
 /-- **Subspace Dimension Inequality**: The topological Krull dimension of any subspace
-is at most the dimension of the ambient space. This fundamental result shows that
-subspaces cannot have larger dimension than their ambient space. -/
-theorem topKrullDim_subspace_le (X : Type*) [TopologicalSpace X] (Y : Set X) :
-    topologicalKrullDim Y ≤ topologicalKrullDim X := by
-  unfold topologicalKrullDim
-  exact krullDim_le_of_strictMono (mapIrreducibleClosed Y) (mapIrreducibleClosed_strictMono Y)
+is at most the dimension of the ambient space. This follows from the fact that the
+inclusion of a subspace is a topological embedding. -/
+theorem topologicalKrullDim_subspace_le (X : Type*) [TopologicalSpace X] (Y : Set X) :
+    topologicalKrullDim Y ≤ topologicalKrullDim X :=
+  IsEmbedding.topologicalKrullDim_le IsEmbedding.subtypeVal
 
 /-- **Proper Closed Subset Dimension**: A proper closed subset of an irreducible space
 with finite dimension has strictly smaller topological Krull dimension. This is a
@@ -170,20 +179,18 @@ theorem topological_dim_proper_closed_subset_lt (X : Type*) [TopologicalSpace X]
   (hY_proper : Y ⊂ Set.univ)
   (hY_nonempty : Y.Nonempty) :
   topologicalKrullDim Y < topologicalKrullDim X := by
-  apply lt_of_le_of_ne (topKrullDim_subspace_le X Y)
+  apply lt_of_le_of_ne (topologicalKrullDim_subspace_le X Y)
   intro h_dim_eq
 
   have h_dim_exists : ∃ n : ℕ∞, topologicalKrullDim X = ↑n := by
     apply Exists.imp (fun _ => Eq.symm)
     apply (WithBot.ne_bot_iff_exists).mp
     apply Order.krullDim_ne_bot_iff.mpr
-    constructor
-    let x := hY_nonempty.some
-    exact {
-      carrier := closure {x},
+    exact ⟨{
+      carrier := closure {hY_nonempty.some},
       is_irreducible' := isIrreducible_singleton.closure,
       is_closed' := isClosed_closure
-    }
+    }⟩
 
   obtain ⟨n, hn⟩ := h_dim_exists
   obtain ⟨m, hn_eq_m⟩ : ∃ m : ℕ, n = ↑m := by
@@ -244,10 +251,8 @@ theorem topological_dim_proper_closed_subset_lt (X : Type*) [TopologicalSpace X]
     · exact hc'_chain
     · simp
     · intro last_val h_last_mem first_val h_first_mem
-      have h_c'_ne_nil : c' ≠ [] := by
-        apply List.ne_nil_of_length_pos
-        simp only [c', List.length_map, RelSeries.length_toList, hc_chain]
-        linarith
+      have h_c'_ne_nil : c' ≠ [] := List.ne_nil_of_length_pos (by
+        simp only [c', List.length_map, RelSeries.length_toList, hc_chain]; linarith)
       rw [List.getLast?_eq_getLast h_c'_ne_nil, Option.mem_some_iff] at h_last_mem
       rw [List.head?_cons, Option.mem_some_iff] at h_first_mem
       rw [← h_last_mem, ← h_first_mem]
@@ -260,10 +265,8 @@ theorem topological_dim_proper_closed_subset_lt (X : Type*) [TopologicalSpace X]
   have h_dim_ge_m_plus_1 : ↑(m + 1) ≤ topologicalKrullDim X := by
     unfold topologicalKrullDim
     rw [le_krullDim_iff]
-    have h_extended_chain_ne_nil : extended_chain ≠ [] := by
-      apply List.ne_nil_of_length_pos
-      rw [h_new_chain_len]
-      linarith
+    have h_extended_chain_ne_nil : extended_chain ≠ [] := List.ne_nil_of_length_pos (by
+      rw [h_new_chain_len]; linarith)
     use RelSeries.fromListChain' extended_chain h_extended_chain_ne_nil h_extended_chain
     simp [h_new_chain_len]
 
@@ -451,7 +454,7 @@ theorem topological_dim_open_cover (X : Type*) [TopologicalSpace X]
     · -- Show ⨆ i, krullDim (U i) ≤ krullDim X
       apply iSup_le
       intro i
-      exact topKrullDim_subspace_le X (U i)
+      exact topologicalKrullDim_subspace_le X (U i)
 
 /-! ### Helper lemma for irreducible components theorem -/
 /-- A maximal preirreducible set is an irreducible component. This lemma establishes
@@ -489,7 +492,8 @@ theorem topological_dim_irreducible_components (X : Type*) [TopologicalSpace X] 
       intro i
       have h_mono : Monotone c.toFun := (Fin.strictMono_iff_lt_succ.mpr c.step).monotone
       exact Subset.trans (h_mono (Fin.le_last i)) h_Z_subset_Y
-    have h_len_le_dim_Y : (c.length : WithBot ℕ∞) ≤ krullDim (IrreducibleCloseds ↑Y_comp) := by
+    have h_len_le_dim_Y : (c.length : WithBot ℕ∞) ≤
+        krullDim (IrreducibleCloseds ↑Y_comp) := by
       let d_fun (i : Fin (c.length + 1)) : IrreducibleCloseds Y_comp := {
         carrier := {y : Y_comp | y.val ∈ (c.toFun i).carrier},
         is_irreducible' := by
@@ -523,7 +527,8 @@ theorem topological_dim_irreducible_components (X : Type*) [TopologicalSpace X] 
         intro i j h_lt
         rw [IrreducibleCloseds.lt_iff_subset, ssubset_iff_subset_ne]
         constructor
-        · change (Subtype.val ⁻¹' (c.toFun i).carrier) ⊆ (Subtype.val ⁻¹' (c.toFun j).carrier)
+        · change (Subtype.val ⁻¹' (c.toFun i).carrier) ⊆
+            (Subtype.val ⁻¹' (c.toFun j).carrier)
           have h_c_lt := (Fin.strictMono_iff_lt_succ.mpr c.step) h_lt
           have h_c_subset : (c.toFun i).carrier ⊆ (c.toFun j).carrier := le_of_lt h_c_lt
           exact Set.preimage_mono h_c_subset
@@ -553,7 +558,7 @@ theorem topological_dim_irreducible_components (X : Type*) [TopologicalSpace X] 
       have h_bdd_above : BddAbove (f '' S) := by
         use krullDim (IrreducibleCloseds X)
         rintro _ ⟨Y, hY_mem, rfl⟩
-        exact topKrullDim_subspace_le X Y
+        exact topologicalKrullDim_subspace_le X Y
       have h_mem : f Y_comp ∈ f '' S :=
         mem_image_of_mem f hY_comp_in_components
       exact le_csSup h_bdd_above h_mem
@@ -561,7 +566,7 @@ theorem topological_dim_irreducible_components (X : Type*) [TopologicalSpace X] 
   · -- Direction 2: sup_{Y ∈ Components} dim Y ≤ dim X
     apply iSup₂_le
     intro Y hY
-    exact topKrullDim_subspace_le X Y
+    exact topologicalKrullDim_subspace_le X Y
 
 /-! ### Scheme dimension -/
 
@@ -702,6 +707,7 @@ theorem thm_scheme_dim :
     topologicalKrullDim X =
       ⨆ (Y ∈ irreducibleComponents X), topologicalKrullDim Y) ∧
   (∀ (X : Scheme), schemeDim X = ⨆ x : X, ringKrullDim (X.presheaf.stalk x)) := by
-  exact ⟨topKrullDim_subspace_le, topological_dim_proper_closed_subset_lt,
+  exact ⟨topologicalKrullDim_subspace_le, topological_dim_proper_closed_subset_lt,
          topological_dim_open_cover, topological_dim_irreducible_components,
          scheme_dim_eq_sup_local_rings⟩
+
