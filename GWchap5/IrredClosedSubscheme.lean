@@ -8,18 +8,20 @@ import Mathlib.RingTheory.Ideal.Operations
 import Mathlib.Topology.Sets.Closeds
 import Mathlib.Topology.Irreducible
 
-open CategoryTheory TopologicalSpace AlgebraicGeometry RingedSpace Ideal Topology
+open CategoryTheory TopologicalSpace AlgebraicGeometry RingedSpace Ideal Topology Prime
 
 variable {X : Scheme} {T : Set X.carrier}
 
 /-- The reduced closed subscheme with underlying set T -/
-noncomputable def reducedClosedSubscheme (T : Closeds X) : Scheme :=
-  (Scheme.IdealSheafData.vanishingIdeal T).radical.subscheme
+noncomputable
+def reducedClosedSubscheme (T : Closeds X) : Scheme :=
+  (Scheme.IdealSheafData.vanishingIdeal T).subscheme
 
 /-- The closed immersion from the reduced closed subscheme to X -/
-noncomputable def reducedClosedSubscheme_ι (T : Closeds X) :
+noncomputable
+def reducedClosedSubscheme_ι (T : Closeds X) :
     reducedClosedSubscheme T ⟶ X :=
-  (Scheme.IdealSheafData.vanishingIdeal T).radical.subschemeι
+  (Scheme.IdealSheafData.vanishingIdeal T).subschemeι
 
 /-- The underlying set of the reduced closed subscheme equals T. -/
 lemma reducedClosedSubscheme_support (T : Closeds X) :
@@ -31,8 +33,8 @@ lemma reducedClosedSubscheme_isReduced (T : Closeds X) :
     IsReduced (reducedClosedSubscheme T) := by
   have h_stalks_reduced : ∀ x, IsReduced ((reducedClosedSubscheme T).presheaf.stalk x) := by
     intro x
-    let I_rad := (Scheme.IdealSheafData.vanishingIdeal T).radical
-    let 𝒰 := I_rad.subschemeCover
+    let I := Scheme.IdealSheafData.vanishingIdeal T
+    let 𝒰 := I.subschemeCover
     let i := 𝒰.idx x
     obtain ⟨x', hx'⟩ := 𝒰.covers x
     rw [← hx']
@@ -43,9 +45,10 @@ lemma reducedClosedSubscheme_isReduced (T : Closeds X) :
       exact (isIso_iff_bijective _).mp inferInstance |>.left
     haveI : IsReduced (Spec (𝒰.X i)) := by
       rw [affine_isReduced_iff]
-      change IsReduced (Γ(X, i.1) ⧸ I_rad.ideal i)
-      rw [← isRadical_iff_quotient_reduced]
-      exact Ideal.radical_isRadical _
+      change IsReduced (Γ(X, i.1) ⧸ I.ideal i)
+      rw [← Ideal.isRadical_iff_quotient_reduced]
+      --exact Ideal.radical_isRadical i.1
+      exact PrimeSpectrum.isRadical_vanishingIdeal _
     exact isReduced_stalk_of_isReduced (Spec (𝒰.X i)) x'
   exact isReduced_of_isReduced_stalk _
 
@@ -64,15 +67,12 @@ lemma reducedClosedSubscheme_properties (T : Closeds X) :
 
 /-- The support of the kernel of a closed immersion equals the closure of its range. -/
 lemma ker_support_eq_closure_range {Z : Scheme} (f : Z ⟶ X)
-    (hf_closed : IsClosedImmersion f) :
-    f.ker.support = closure (Set.range f.base) := by
-  haveI : QuasiCompact f := by
-    haveI : IsClosedImmersion f := hf_closed
-    infer_instance
-  exact Scheme.Hom.support_ker f
+    [IsClosedImmersion f] :
+    f.ker.support = closure (Set.range f.base) :=
+  Scheme.Hom.support_ker f
 
 /-- The kernel of a closed immersion with reduced domain is a radical ideal sheaf. -/
-lemma ker_of_reduced_isRadical {Z : Scheme} (f : Z ⟶ X) (hf_closed : IsClosedImmersion f)
+lemma ker_of_reduced_isRadical {Z : Scheme} (f : Z ⟶ X) [IsClosedImmersion f]
     (hf_reduced : IsReduced Z) : f.ker.radical = f.ker := by
   ext U : 2
   rw [f.ker.radical_ideal, f.ker_apply, radical_eq_iff, Ideal.isRadical_iff_quotient_reduced]
@@ -86,22 +86,16 @@ lemma ker_of_reduced_isRadical {Z : Scheme} (f : Z ⟶ X) (hf_closed : IsClosedI
   apply isReduced_of_injective e.toRingHom
   exact e.injective
 
-/-- For a reduced closed immersion with range T, the kernel equals the radical vanishing ideal. -/
-lemma ker_eq_radical_vanishingIdeal (T : Closeds X) {Z : Scheme} (f : Z ⟶ X)
-    (hf_closed : IsClosedImmersion f) (hf_range : Set.range f.base = (T : Set X))
+/-- For a reduced closed immersion with range T, the kernel equals the vanishing ideal. -/
+lemma ker_eq_vanishingIdeal (T : Closeds X) {Z : Scheme} (f : Z ⟶ X)
+    [IsClosedImmersion f] (hf_range : Set.range f.base = (T : Set X))
     (hf_reduced : IsReduced Z) :
-    f.ker = (Scheme.IdealSheafData.vanishingIdeal T).radical := by
-  have h_rad : f.ker.radical = f.ker := ker_of_reduced_isRadical f hf_closed hf_reduced
-  have h_supp : f.ker.support = T := by
-    have h_eq:= ker_support_eq_closure_range f hf_closed
-    rw [hf_range, T.isClosed.closure_eq] at h_eq
-    exact Closeds.ext h_eq
-  rw [← h_supp, Scheme.IdealSheafData.vanishingIdeal_support]
-  rw [show (Scheme.Hom.ker f).radical.radical = (Scheme.Hom.ker f).radical by {
-    ext U : 2;
-    apply Ideal.radical_idem;
-  }]
-  exact h_rad.symm
+    f.ker = Scheme.IdealSheafData.vanishingIdeal T := by
+  have h_ker_is_rad : f.ker.radical = f.ker := ker_of_reduced_isRadical f hf_reduced
+  rw [← h_ker_is_rad, ← @Scheme.IdealSheafData.vanishingIdeal_support]
+  congr 1
+  apply Closeds.ext
+  rw [ker_support_eq_closure_range f, hf_range, T.isClosed.closure_eq]
 
 /-- Two closed immersions into the same scheme with the same kernel are isomorphic. -/
 @[simps hom inv]
@@ -116,18 +110,17 @@ def isoOfEqKer {Z₁ Z₂ : Scheme} {f₁ : Z₁ ⟶ X} {f₂ : Z₂ ⟶ X}
 /-- There exists a reduced closed subscheme with underlying set `T`,
 and it is unique up to a unique isomorphism. -/
 theorem unique_reduced_closed_subscheme (T : Closeds X) :
-    ∃ (Z' : Over X), IsClosedImmersion Z'.hom ∧ Set.range Z'.hom.base = (T : Set X) ∧ IsReduced Z'.left ∧
-      ∀ (Z₂ : Over X) (_ : IsClosedImmersion Z₂.hom ∧ Set.range Z₂.hom.base = (T : Set X) ∧ IsReduced Z₂.left),
-        Nonempty (Z' ≅ Z₂) := by
+  ∃ (Z' : Over X), IsClosedImmersion Z'.hom ∧ Set.range Z'.hom.base = (T : Set X) ∧
+    IsReduced Z'.left ∧ ∀ (Z₂ : Over X) [IsClosedImmersion Z₂.hom],
+      Set.range Z₂.hom.base = (T : Set X) → IsReduced Z₂.left → Nonempty (Z' ≅ Z₂) := by
   use Over.mk (reducedClosedSubscheme_ι T)
   have prop := reducedClosedSubscheme_properties T
   refine ⟨prop.1, prop.2.1, prop.2.2, ?_⟩
-  intro Z₂ ⟨h_imm, h_range, h_red⟩
+  intro Z₂ h_range h_range h_red
   fapply Nonempty.intro
-  have h_kernels_eq : Z₂.hom.ker = (reducedClosedSubscheme_ι T).ker :=
-    (ker_eq_radical_vanishingIdeal T Z₂.hom h_imm h_range h_red).trans
-      (ker_eq_radical_vanishingIdeal T (reducedClosedSubscheme_ι T) prop.1 prop.2.1 prop.2.2).symm
-  haveI := prop.1
-  haveI := h_imm
+  haveI H_prop1 := prop.1
+  have h_kernels_eq : Z₂.hom.ker = (reducedClosedSubscheme_ι T).ker := by
+    rw [ker_eq_vanishingIdeal T Z₂.hom h_range h_red,
+      ker_eq_vanishingIdeal T (reducedClosedSubscheme_ι T) prop.2.1 prop.2.2]
   let e : Z₂.left ≅ reducedClosedSubscheme T := isoOfEqKer h_kernels_eq
   fapply Over.isoMk e.symm
