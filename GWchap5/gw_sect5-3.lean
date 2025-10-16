@@ -1,11 +1,12 @@
 /-
-Copyright (c) 2024 Alessandro D'Angelo. All rights reserved.
+Copyright (c) 2025 Alessandro D'Angelo. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alessandro D'Angelo
 -/
 import Mathlib.AlgebraicGeometry.AffineScheme
 import Mathlib.AlgebraicGeometry.Scheme
 import Mathlib.AlgebraicGeometry.Spec
+import Mathlib.Data.List.Chain
 import Mathlib.RingTheory.Ideal.Height
 import Mathlib.Order.KrullDimension
 import Mathlib.RingTheory.Spectrum.Prime.Basic
@@ -46,7 +47,7 @@ dimension inequalities.
 Krull dimension, topological dimension, schemes, irreducible components, dimension theory
 -/
 
-open Set Function Order Topology TopologicalSpace AlgebraicGeometry
+open Set Function Order Topology TopologicalSpace AlgebraicGeometry List
 
 variable {X : Type*} [TopologicalSpace X]
 
@@ -125,10 +126,10 @@ lemma IrreducibleCloseds.mapOfEmbedding_strictMono {f : Y → X} (hf : IsEmbeddi
     StrictMono (IrreducibleCloseds.mapOfEmbedding hf) := by
   intro A B h_less_AB
   rw [IrreducibleCloseds.lt_iff_subset] at h_less_AB ⊢
-  exact ⟨closure_mono (image_subset _ (subset_of_ssubset h_less_AB)), fun h_contra_subset =>
+  exact ⟨closure_mono (Set.image_mono (subset_of_ssubset h_less_AB)), fun h_contra_subset =>
     (ne_of_lt (IrreducibleCloseds.lt_iff_subset.mpr h_less_AB))
     (IrreducibleCloseds.mapOfEmbedding_injective hf (IrreducibleCloseds.ext
-      (Subset.antisymm (closure_mono (image_subset _ (subset_of_ssubset h_less_AB)))
+      (Subset.antisymm (closure_mono (Set.image_mono (subset_of_ssubset h_less_AB)))
         h_contra_subset)))⟩
 
 /-- If `f : Y → X` is an embedding, then `dim(Y) ≤ dim(X)`.
@@ -162,16 +163,14 @@ lemma mapIrreducibleClosed_strictMono (Y : Set X) :
 /-!
 ### Main dimension theorems -/
 
-/-- **Subspace Dimension Inequality**: The topological Krull dimension of any subspace
-is at most the dimension of the ambient space. This follows from the fact that the
-inclusion of a subspace is a topological embedding. -/
+/-- The topological Krull dimension of any subspace is at most the dimension of the
+ambient space. -/
 theorem topologicalKrullDim_subspace_le (X : Type*) [TopologicalSpace X] (Y : Set X) :
     topologicalKrullDim Y ≤ topologicalKrullDim X :=
   IsEmbedding.topologicalKrullDim_le IsEmbedding.subtypeVal
 
-/-- **Proper Closed Subset Dimension**: A proper closed subset of an irreducible space
-with finite dimension has strictly smaller topological Krull dimension. This is a
-key result showing that proper closed subsets always have smaller dimension. -/
+/-- A proper closed subset of an irreducible space with finite dimension has strictly
+smaller topological Krull dimension. -/
 theorem topological_dim_proper_closed_subset_lt (X : Type*) [TopologicalSpace X]
   (Y : Set X) (hX_irred : IsIrreducible (Set.univ : Set X))
   (hX_finite : topologicalKrullDim X ≠ ⊤)
@@ -208,10 +207,10 @@ theorem topological_dim_proper_closed_subset_lt (X : Type*) [TopologicalSpace X]
   obtain ⟨c, hc_chain⟩ := h_chain_Y_exists
 
   let c' := List.map (mapIrreducibleClosed Y) c.toList
-  have hc'_chain : List.Chain' (· < ·) c' := by
-    apply List.chain'_map_of_chain' (mapIrreducibleClosed Y)
+  have hc'_chain : IsChain (· < ·) c' := by
+    apply List.isChain_map_of_isChain (mapIrreducibleClosed Y)
     · exact mapIrreducibleClosed_strictMono Y
-    · exact RelSeries.toList_chain' c
+    · exact RelSeries.isChain_toList c
 
   let X_ics : IrreducibleCloseds X := ⟨Set.univ, hX_irred, isClosed_univ⟩
   have h_last_lt_X : List.getLast c' (by
@@ -246,8 +245,8 @@ theorem topological_dim_proper_closed_subset_lt (X : Type*) [TopologicalSpace X]
     exact ssubset_of_subset_of_ssubset h_subset_Y hY_proper
 
   let extended_chain := c' ++ [X_ics]
-  have h_extended_chain : List.Chain' (· < ·) extended_chain := by
-    apply List.Chain'.append
+  have h_extended_chain : IsChain (· < ·) extended_chain := by
+    apply IsChain.append
     · exact hc'_chain
     · simp
     · intro last_val h_last_mem first_val h_first_mem
@@ -259,7 +258,7 @@ theorem topological_dim_proper_closed_subset_lt (X : Type*) [TopologicalSpace X]
       exact h_last_lt_X
 
   have h_new_chain_len : extended_chain.length = m + 2 := by
-    simp [extended_chain, c', List.length_append, List.length_singleton,
+    simp [extended_chain, c', List.length_append,
       List.length_map, RelSeries.length_toList, hc_chain]
 
   have h_dim_ge_m_plus_1 : ↑(m + 1) ≤ topologicalKrullDim X := by
@@ -267,7 +266,7 @@ theorem topological_dim_proper_closed_subset_lt (X : Type*) [TopologicalSpace X]
     rw [le_krullDim_iff]
     have h_extended_chain_ne_nil : extended_chain ≠ [] := List.ne_nil_of_length_pos (by
       rw [h_new_chain_len]; linarith)
-    use RelSeries.fromListChain' extended_chain h_extended_chain_ne_nil h_extended_chain
+    use RelSeries.fromListIsChain extended_chain h_extended_chain_ne_nil h_extended_chain
     simp [h_new_chain_len]
 
   rw [← h_dim_eq, h_dim_Y_eq_m] at h_dim_ge_m_plus_1
@@ -351,7 +350,7 @@ lemma chain_restriction_to_open_cover {X : Type*} [TopologicalSpace X]
           Set.inter_comm U _] at h_inter_eq
         change Zᵢ ∩ U = Zⱼ ∩ U at h_inter_eq
         rw [← h_inter_eq, Set.inter_assoc, Set.inter_comm, Set.inter_assoc]
-        simp only [compl_inter_self, inter_empty, d_fun]
+        simp only [compl_inter_self, inter_empty]
       simp only [Set.inter_assoc, Set.diff_eq_compl_inter] at h_inter_empty
       rw [inter_left_comm] at h_inter_empty
       exact h_triple_inter_nonempty.ne_empty h_inter_empty
@@ -362,13 +361,12 @@ lemma chain_restriction_to_open_cover {X : Type*} [TopologicalSpace X]
     step := by
       intro i
       apply h_strict_mono
-      simp only [Fin.castSucc_lt_succ_iff, le_refl, d_fun]
+      simp only [Fin.castSucc_lt_succ_iff, le_refl]
   }
 
 
-/-- **Open Cover Dimension**: The topological Krull dimension of a space equals
-the supremum of dimensions over any open cover. This fundamental result allows
-computing dimensions by covering the space with simpler open sets. -/
+/-- The topological Krull dimension of a space equals the supremum of dimensions
+over any open cover. -/
 theorem topological_dim_open_cover (X : Type*) [TopologicalSpace X]
   (ι : Type*) (U : ι → Set X) (hU : ∀ i, IsOpen (U i)) (hcover : ⋃ i, U i = Set.univ) :
   topologicalKrullDim X = ⨆ i, topologicalKrullDim (U i) := by
@@ -420,7 +418,7 @@ theorem topological_dim_open_cover (X : Type*) [TopologicalSpace X]
         ext x
         simp only [Set.mem_iUnion, Set.mem_empty_iff_false, iff_false]
         intro ⟨j, hx_in_Uj⟩
-        exact h_all_empty j ⟨⟨x, hx_in_Uj⟩⟩
+        exact (h_all_empty j).false ⟨x, hx_in_Uj⟩
       rw [h_union_empty] at hcover
       have empty_X : IsEmpty X := by
         rw [← Set.univ_eq_empty_iff]
@@ -457,9 +455,7 @@ theorem topological_dim_open_cover (X : Type*) [TopologicalSpace X]
       exact topologicalKrullDim_subspace_le X (U i)
 
 /-! ### Helper lemma for irreducible components theorem -/
-/-- A maximal preirreducible set is an irreducible component. This lemma establishes
-the connection between the abstract notion of maximality and the concrete definition
-of irreducible components. -/
+/-- A maximal preirreducible set is an irreducible component. -/
 lemma maximal_preirreducible_is_irred_component {t : Set X} (h_nonempty : t.Nonempty)
     (h_preirred : IsPreirreducible t)
     (h_maximal : ∀ u, IsPreirreducible u → t ⊆ u → u = t) :
@@ -471,9 +467,8 @@ lemma maximal_preirreducible_is_irred_component {t : Set X} (h_nonempty : t.None
   have h_u_t : u = t := h_maximal u h_u_irred.isPreirreducible h_t_subset_u
   rw [h_u_t]
 
-/-- **Irreducible Components Dimension**: The topological Krull dimension equals
-the supremum over all irreducible components. This shows that the dimension is
-completely determined by the dimensions of the irreducible components. -/
+/-- The topological Krull dimension equals the supremum over all irreducible
+components. -/
 theorem topological_dim_irreducible_components (X : Type*) [TopologicalSpace X] :
     topologicalKrullDim X = ⨆ (Y ∈ irreducibleComponents X), topologicalKrullDim Y := by
   unfold topologicalKrullDim
@@ -529,7 +524,8 @@ theorem topological_dim_irreducible_components (X : Type*) [TopologicalSpace X] 
         constructor
         · change (Subtype.val ⁻¹' (c.toFun i).carrier) ⊆
             (Subtype.val ⁻¹' (c.toFun j).carrier)
-          have h_c_lt := (Fin.strictMono_iff_lt_succ.mpr c.step) h_lt
+          have h_c_mono : StrictMono c.toFun := Fin.strictMono_iff_lt_succ.mpr c.step
+          have h_c_lt := h_c_mono h_lt
           have h_c_subset : (c.toFun i).carrier ⊆ (c.toFun j).carrier := le_of_lt h_c_lt
           exact Set.preimage_mono h_c_subset
         · intro h_eq
@@ -539,7 +535,8 @@ theorem topological_dim_irreducible_components (X : Type*) [TopologicalSpace X] 
               exact h_chain_in_Y i
             · rw [Subtype.range_val]
               exact h_chain_in_Y j
-          have h_c_lt := (Fin.strictMono_iff_lt_succ.mpr c.step) h_lt
+          have h_c_mono : StrictMono c.toFun := Fin.strictMono_iff_lt_succ.mpr c.step
+          have h_c_lt := h_c_mono h_lt
           have h_c_ne := ne_of_lt h_c_lt
           apply h_c_ne
           exact IrreducibleCloseds.ext h_carriers_eq
@@ -570,48 +567,46 @@ theorem topological_dim_irreducible_components (X : Type*) [TopologicalSpace X] 
 
 /-! ### Scheme dimension -/
 
-/-- The dimension of a scheme is defined as the Krull dimension of its underlying
-topological space. This connects the algebraic geometry notion of scheme dimension
-with the topological Krull dimension. -/
+/-- The dimension of a scheme is the Krull dimension of its underlying topological
+space. -/
 noncomputable def schemeDim (X : Scheme) : WithBot ℕ∞ :=
   topologicalKrullDim X.carrier
 
-/-- **Scheme Dimension via Local Rings**: For any scheme `X`, the dimension equals
-the supremum of Krull dimensions of stalks `X.presheaf.stalk x` at all points `x`.
-This fundamental result connects the geometric dimension with algebraic invariants. -/
+/-- For any scheme, the dimension equals the supremum of Krull dimensions of stalks
+at all points. -/
 theorem scheme_dim_eq_sup_local_rings (X : Scheme) :
     schemeDim X = ⨆ x : X, ringKrullDim (X.presheaf.stalk x) := by
   let 𝒰 := X.affineCover
   unfold schemeDim
-  rw [topological_dim_open_cover X.carrier 𝒰.J
-      (fun i ↦ Set.range (𝒰.map i).base)
-      (fun i ↦ IsOpenImmersion.isOpen_range (𝒰.map i))
+  rw [topological_dim_open_cover X.carrier 𝒰.I₀
+      (fun i ↦ (𝒰.f i).opensRange.carrier)
+      (fun i ↦ (𝒰.f i).opensRange.isOpen)
       𝒰.iUnion_range]
 
   have h_rhs_sup : (⨆ x : X, ringKrullDim (X.presheaf.stalk x)) =
-      ⨆ (i : 𝒰.J), ⨆ (x : Set.range (𝒰.map i).base),
+      ⨆ (i : 𝒰.I₀), ⨆ (x : (𝒰.f i).opensRange.carrier),
         ringKrullDim (X.presheaf.stalk x) := by
     rw [← iSup_univ, ← 𝒰.iUnion_range, iSup_iUnion]
     apply iSup_congr
     intro i
-    let U_opens : Opens X.carrier := (𝒰.map i).opensRange
-    rw [iSup_subtype']
+    let U_opens : Opens X.carrier := (𝒰.f i).opensRange
+    exact iSup_subtype'
 
   rw [h_rhs_sup]
   apply iSup_congr
   intro i
-  let f := 𝒰.map i
+
+  let f := 𝒰.f i
   haveI : IsOpenImmersion f := 𝒰.map_prop i
-  let Y := 𝒰.obj i
+  let Y := 𝒰.X i
   let e_scheme : Y ≅ (f.opensRange : Scheme) := Scheme.Hom.isoOpensRange f
   let e_homeo : Y.carrier ≃ₜ ↑(f.opensRange) :=
     TopCat.homeoOfIso (Scheme.forgetToTop.mapIso e_scheme)
-  have dim_eq : topologicalKrullDim (Set.range f.base) = topologicalKrullDim Y.carrier :=
+  have dim_eq : topologicalKrullDim (f.opensRange).carrier = topologicalKrullDim Y.carrier :=
     (IsHomeomorph.topologicalKrullDim_eq e_homeo e_homeo.isHomeomorph).symm
-  rw [dim_eq]
-  have rhs_eq : (⨆ x : ↥(Set.range f.base), ringKrullDim (X.presheaf.stalk x.val)) =
+
+  have rhs_eq : (⨆ x : (f.opensRange).carrier, ringKrullDim (X.presheaf.stalk x.val)) =
       (⨆ y : Y.carrier, ringKrullDim (X.presheaf.stalk (e_homeo y).val)) := by
-    rw [← Scheme.Hom.coe_opensRange]
     apply le_antisymm
     · apply iSup_le
       intro x
@@ -622,7 +617,8 @@ theorem scheme_dim_eq_sup_local_rings (X : Scheme) :
       intro y
       convert le_iSup (fun x' => ringKrullDim (X.presheaf.stalk x'.val))
         (e_homeo y)
-  rw [rhs_eq]
+
+  rw [dim_eq, rhs_eq]
   change schemeDim Y = _
   let R := Scheme.Γ.obj (Opposite.op Y)
   let R_iso_spec : Y ≅ Spec (Scheme.Γ.obj (Opposite.op Y)) :=
@@ -683,15 +679,7 @@ theorem scheme_dim_eq_sup_local_rings (X : Scheme) :
 
 /-! ### Combined main theorem -/
 
-/-- **Main Theorem**: Combined statement of all dimension results. This theorem
-packages together all the fundamental results about topological Krull dimension:
-- Subspace dimension inequality
-- Proper closed subset dimension strictness
-- Open cover dimension formula
-- Irreducible components dimension formula
-- Scheme dimension via local rings
-
-These results form the foundation of dimension theory in algebraic geometry. -/
+/-- Combined statement of all main dimension results. -/
 theorem thm_scheme_dim :
   (∀ (X : Type*) [TopologicalSpace X] (Y : Set X),
     topologicalKrullDim Y ≤ topologicalKrullDim X) ∧
@@ -710,4 +698,3 @@ theorem thm_scheme_dim :
   exact ⟨topologicalKrullDim_subspace_le, topological_dim_proper_closed_subset_lt,
          topological_dim_open_cover, topological_dim_irreducible_components,
          scheme_dim_eq_sup_local_rings⟩
-
