@@ -1,44 +1,43 @@
 # Formalizing Görtz-Wedhorn's Algebraic Geometry in Lean 4
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-lightblue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Lean 4](https://img.shields.io/badge/Lean-4.21.0-blue.svg)](https://leanprover-community.github.io/)
-[![Mathlib](https://img.shields.io/badge/Mathlib-4.21.0-blue.svg)](https://github.com/leanprover-community/mathlib4)
+[![Lean 4](https://img.shields.io/badge/Lean-4.24.0-blue.svg)](https://leanprover-community.github.io/)
+[![Mathlib](https://img.shields.io/badge/Mathlib-4.24.0-blue.svg)](https://github.com/leanprover-community/mathlib4)
 
 A formalization project in **Lean 4** of selected results from Ulrich Görtz and Torsten Wedhorn's *"Algebraic Geometry I"* (2nd Edition). This repository serves as a portfolio demonstration of formal mathematics and proof verification capabilities in modern algebraic geometry.
 
-## 🎯 Project Overview
+## Project Overview
 
-This is a **learning project** to develop expertise in formalizing advanced algebraic geometry using Lean 4. The ultimate goal is to work toward significant theorems like **Bézout's theorem**, **Zariski's Main Theorem**, or other major results in algebraic geometry.
+This project formalizes selected results from Ulrich Görtz and Torsten Wedhorn's *Algebraic Geometry I* (2nd Edition) using Lean 4. The work focuses on building foundational infrastructure in scheme theory and dimension theory, with the long-term objective of formalizing significant theorems such as Bézout's theorem or Zariski's Main Theorem.
 
-Currently, I'm building foundational infrastructure by formalizing basic results from Görtz-Wedhorn's textbook, starting with **Chapter 5: Schemes** and dimension theory. While these preliminary results (like Lemma 5.7) require substantial code due to the complexity of formalization, they're stepping stones toward the real mathematical milestones.
+### Reference and Methodology
 
-### 📚 Reference & Methodology
+- **Primary Source**: Ulrich Görtz and Torsten Wedhorn, *Algebraic Geometry I*, 2nd Edition
+- **Current Focus**: Chapter 5 (Schemes) and topological Krull dimension theory
+- **Long-term Goals**: Major theorems including Bézout's theorem, Zariski's Main Theorem, and cohomological results
 
-- **Primary Source**: Ulrich Görtz and Torsten Wedhorn, *"Algebraic Geometry I"*, 2nd Edition
-- **Current Phase**: Foundational results on topological Krull dimension and scheme theory
-- **Long-term Goals**: Major theorems like Bézout's theorem, Zariski's Main Theorem, or cohomological results
-- **Purpose**: Personal learning project to master Lean 4 formalization techniques in algebraic geometry
+### Current Progress
 
-### ✨ Current Progress
+**Completed Formalizations:**
+- **Lemma 5.7 (Görtz-Wedhorn)**: Complete formalization of fundamental topological Krull dimension properties
+  - Dimension inequality for subspaces: `dim(Y) ≤ dim(X)`
+  - Strict inequality for proper closed subsets of irreducible spaces
+  - Dimension formula via open covers: `dim(X) = sup{dim(U_i)}`
+  - Dimension formula via irreducible components: `dim(X) = sup{dim(Y)}`
+  - Scheme dimension characterization via local rings: `dim(X) = sup{dim(O_{X,x})}`
 
-**Foundation Building (Chapter 5):**
-- **Lemma 5.7**: Complete formalization of topological Krull dimension properties
-- **Subspace dimension inequality**: `dim(Y) ≤ dim(X)` for subspaces
-- **Proper closed subset dimension**: Strict inequality for proper closed subsets
-- **Open cover dimension formula**: `dim(X) = sup{dim(U_i) : U_i open cover}`
-- **Irreducible components dimension**: `dim(X) = sup{dim(Y) : Y irreducible component}`
-- **Scheme dimension characterization**: Connection between topological and ring-theoretic dimensions
+**Supporting Infrastructure:**
+- **Reduced closed subschemes**: Construction of the unique reduced closed subscheme structure on a given closed subset of a scheme, using vanishing ideal sheaves and radical constructions
 
-**Learning Outcomes So Far:**
-- **~1350 lines** of Lean 4 code (substantial due to formalization complexity, not mathematical depth)
-- **Infrastructure development**: Building the foundation needed for serious algebraic geometry
-- **Technique mastery**: Advanced proof techniques in topological spaces, order theory, and categorical constructions
-- **Understanding the gap**: Appreciating the difference between mathematical intuition and formal verification
+**Code Statistics:**
+- Total formalization: approximately 800 lines of Lean 4 code
+- Main dimension theory file: 675 lines
+- Scheme construction utilities: 133 lines
 
-## 🔧 Setup and Installation
+## Setup and Installation
 
 ### Prerequisites
-- [Lean 4](https://leanprover-community.github.io/get_started.html) (version 4.21.0)
+- [Lean 4](https://leanprover-community.github.io/get_started.html) (version 4.24.0)
 - [Lake](https://github.com/leanprover/lake) build system
 - Git
 
@@ -50,36 +49,41 @@ lake exe cache get
 lake build
 ```
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 Lean-AG/
-├── GWchap5/                    # Main formalization directory
-│   ├── gw_sect5-3.lean         # Core theorems and proofs (~1350 lines)
-│   └── Mathlib/                # Additional Mathlib extensions
-├── GWchap5.lean               # Root module imports
-├── lakefile.toml              # Lake build configuration
-├── lean-toolchain            # Lean version specification
-└── README.md                  # This file
+├── GWchap5/                         # Main formalization directory
+│   ├── gw_sect5-3.lean             # Topological Krull dimension theory (675 lines)
+│   └── IrredClosedSubscheme.lean   # Reduced closed subscheme construction (133 lines)
+├── GWchap5.lean                    # Root module imports
+├── lakefile.toml                   # Lake build configuration
+├── lean-toolchain                  # Lean version specification
+└── README.md                       # This file
 ```
 
-### 📋 File Descriptions
+### File Descriptions
 
-- **[`GWchap5/gw_sect5-3.lean`](GWchap5/gw_sect5-3.lean)**: Contains the main formalization work including:
-  - Helper lemmas for closure operations in subspaces
-  - Irreducible closed sets and their properties
+- **[`GWchap5/gw_sect5-3.lean`](GWchap5/gw_sect5-3.lean)**: Core dimension theory formalization
+  - Maps between irreducible closed sets induced by continuous functions
+  - Dimension inequalities for embeddings and subspaces
   - Topological Krull dimension theory
-  - Complete proof of Lemma 5.7 and related results
-  - Scheme dimension characterizations
+  - Complete proof of Lemma 5.7 (Görtz-Wedhorn)
+  - Scheme dimension characterization via local rings
 
-- **[`lakefile.toml`](lakefile.toml)**: Lake build system configuration with Mathlib dependencies
-- **[`lean-toolchain`](lean-toolchain)**: Specifies Lean 4.21.0 for reproducible builds
+- **[`GWchap5/IrredClosedSubscheme.lean`](GWchap5/IrredClosedSubscheme.lean)**: Scheme-theoretic constructions
+  - Reduced closed subscheme construction for closed subsets
+  - Proof that the construction yields a reduced scheme
+  - Supporting infrastructure for scheme theory
 
-## 🏗️ Formalized Theorems
+- **[`lakefile.toml`](lakefile.toml)**: Lake build system configuration with Mathlib v4.24.0 dependencies
+- **[`lean-toolchain`](lean-toolchain)**: Specifies Lean 4.24.0 for reproducible builds
 
-### Current Foundation: Lemma 5.7 (Görtz-Wedhorn)
+## Formalized Theorems
 
-This **foundational lemma** establishes basic properties of topological Krull dimension. While not a deep result in algebraic geometry, its formalization demonstrates the infrastructure needed for serious theorems:
+### Lemma 5.7 (Görtz-Wedhorn)
+
+This foundational lemma establishes basic properties of topological Krull dimension:
 
 ```lean
 theorem thm_scheme_dim :
@@ -100,48 +104,40 @@ theorem thm_scheme_dim :
 
 ### Supporting Results
 
-**Topological Foundations:**
-- `closure_in_subspace_eq_inter`: Characterization of closures in subspace topology
-- `map_irreducible_closed_injective`: Injectivity of maps between irreducible closed sets
-- `map_irreducible_closed_strictMono`: Strict monotonicity properties
+**Maps on Irreducible Closed Sets:**
+- `IrreducibleCloseds.mapOfContinuous`: Maps induced by continuous functions
+- `mapOfContinuous_injective_of_embedding`: Injectivity for embeddings
+- `mapOfContinuous_strictMono_of_embedding`: Strict monotonicity for embeddings
 
 **Dimension Theory:**
-- `top_KrullDim_subspace_le`: Dimension inequality for subspaces
-- `topological_dim_proper_closed_subset_lt`: Strict inequality for proper subsets
+- `topologicalKrullDim_subspace_le`: Dimension inequality for subspaces
+- `topological_dim_proper_closed_subset_lt`: Strict inequality for proper closed subsets
 - `topological_dim_open_cover`: Dimension via open covers
 - `topological_dim_irreducible_components`: Dimension via irreducible components
 - `scheme_dim_eq_sup_local_rings`: Scheme dimension via local ring dimensions
 
+**Scheme Constructions:**
+- `reducedClosedSubscheme`: Construction of reduced closed subschemes
+- `reducedClosedSubscheme_ι`: Closed immersion from reduced subscheme
+- `reducedClosedSubscheme_isReduced`: Proof that the construction is reduced
 
-## 🚀 Learning Roadmap
+## Development Roadmap
 
-This project is building toward major algebraic geometry theorems through systematic foundation building:
+### Near-term
+- Complete fundamental results from Chapter 5
+- Additional scheme-theoretic constructions and morphism properties
 
-### Near-term (Building Infrastructure)
-1. **Complete Chapter 5**: Finish basic scheme theory and morphism properties
-2. **Geometric Constructions**: Projective spaces, blow-ups, and basic varieties
-3. **Intersection Theory Foundations**: Cycles, divisors, and intersection products
+### Medium-term
+- Intersection theory foundations
+- Projective geometry and varieties
+- Major theorems: Bézout's theorem, Zariski's Main Theorem
 
-### Medium-term (Substantial Results)
-4. **Bézout's Theorem**: Intersection multiplicities and degree bounds
-5. **Zariski's Main Theorem**: Proper morphisms and normalizations
-6. **Cohomology Theory**: Sheaf cohomology and vanishing theorems
+### Long-term
+- Cohomology theory and vanishing theorems
+- Riemann-Roch theorem
+- Advanced topics in algebraic geometry
 
-### Long-term (Deep Theorems)
-7. **Riemann-Roch**: For curves and surfaces
-8. **Resolution of Singularities**: In characteristic zero
-9. **Advanced Topics**: Étale cohomology, scheme theory applications
-
-*Note: This is an ambitious learning timeline - each step involves substantial technical development.*
-
-## 🤝 Contributing & Collaboration
-
-While this is primarily a portfolio project, I welcome:
-- **Code Reviews**: Feedback on proof techniques and organization
-- **Mathematical Discussion**: Insights on alternative approaches or generalizations
-- **Educational Use**: Feel free to use this as a learning resource for Lean 4
-
-## 📚 References & Acknowledgments
+## References and Acknowledgments
 
 - Ulrich Görtz and Torsten Wedhorn, *"Algebraic Geometry I"*, 2nd Edition, Springer (2020)
 - [Mathlib Community](https://leanprover-community.github.io/) for the extensive mathematics library
@@ -150,4 +146,4 @@ While this is primarily a portfolio project, I welcome:
 
 ---
 
-**Note**: This is an **active learning project** in mathematical formalization. The current results are foundational - the real mathematical goals lie ahead. The code compiles with Lean 4.21.0 and Mathlib 4.21.0.
+**Note**: This is an active formalization project. The code compiles with Lean 4.24.0 and Mathlib 4.24.0.
