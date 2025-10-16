@@ -7,6 +7,7 @@ import Mathlib.AlgebraicGeometry.AffineScheme
 import Mathlib.AlgebraicGeometry.Scheme
 import Mathlib.AlgebraicGeometry.Spec
 import Mathlib.Data.List.Chain
+import Mathlib.Data.SetLike.Basic
 import Mathlib.RingTheory.Ideal.Height
 import Mathlib.Order.KrullDimension
 import Mathlib.RingTheory.Spectrum.Prime.Basic
@@ -54,32 +55,8 @@ variable {X : Type*} [TopologicalSpace X]
 /-!
 ### Partial order structure on irreducible closed sets -/
 
-instance : PartialOrder (IrreducibleCloseds X) where
-  le s t := s.carrier ⊆ t.carrier
-  le_refl s := Set.Subset.refl _
-  le_trans s t u hst htu := Set.Subset.trans hst htu
-  le_antisymm s t hst hts := IrreducibleCloseds.ext (Set.Subset.antisymm hst hts)
+instance : PartialOrder (IrreducibleCloseds X) := inferInstance
 
-/-- The partial order on `IrreducibleCloseds X` is given by subset inclusion
-of the underlying sets. -/
-lemma IrreducibleCloseds.le_iff_subset {s t : IrreducibleCloseds X} :
-    s ≤ t ↔ s.carrier ⊆ t.carrier := by rfl
-
-/-- The strict partial order on `IrreducibleCloseds X` corresponds to strict
-subset inclusion of the underlying sets. -/
-lemma IrreducibleCloseds.lt_iff_subset {s t : IrreducibleCloseds X} :
-    s < t ↔ s.carrier ⊂ t.carrier := by
-  constructor
-  · intro h_lt
-    have h_le := le_of_lt h_lt
-    have h_ne := ne_of_lt h_lt
-    rw [ssubset_iff_subset_ne]
-    exact ⟨by rwa [← IrreducibleCloseds.le_iff_subset], mt IrreducibleCloseds.ext h_ne⟩
-  · intro h_ssubset
-    rw [lt_iff_le_and_ne]
-    rcases h_ssubset with ⟨h_subset, h_ne_carrier⟩
-    exact ⟨by rwa [IrreducibleCloseds.le_iff_subset],
-      fun h_s_eq_t => h_ne_carrier (by rw [h_s_eq_t])⟩
 
 /-!
 ### Dimension inequalities for embeddings
@@ -125,9 +102,9 @@ lemma IrreducibleCloseds.mapOfEmbedding_injective {f : Y → X} (hf : IsEmbeddin
 lemma IrreducibleCloseds.mapOfEmbedding_strictMono {f : Y → X} (hf : IsEmbedding f) :
     StrictMono (IrreducibleCloseds.mapOfEmbedding hf) := by
   intro A B h_less_AB
-  rw [IrreducibleCloseds.lt_iff_subset] at h_less_AB ⊢
+  rw [← SetLike.coe_ssubset_coe] at h_less_AB ⊢
   exact ⟨closure_mono (Set.image_mono (subset_of_ssubset h_less_AB)), fun h_contra_subset =>
-    (ne_of_lt (IrreducibleCloseds.lt_iff_subset.mpr h_less_AB))
+    (ne_of_lt (SetLike.coe_ssubset_coe.mp h_less_AB))
     (IrreducibleCloseds.mapOfEmbedding_injective hf (IrreducibleCloseds.ext
       (Subset.antisymm (closure_mono (Set.image_mono (subset_of_ssubset h_less_AB)))
         h_contra_subset)))⟩
@@ -235,7 +212,7 @@ theorem topological_dim_proper_closed_subset_lt (X : Type*) [TopologicalSpace X]
       apply Fin.eq_of_val_eq
       simp [hc_chain]
 
-    rw [h_last_eq, IrreducibleCloseds.lt_iff_subset]
+    rw [h_last_eq, ← SetLike.coe_ssubset_coe]
     change (closure (Subtype.val '' c.last.carrier)) ⊂ X_ics.carrier
     have h_carrier_closed_in_X : IsClosed (Subtype.val '' c.last.carrier) :=
       IsClosed.isClosedMap_subtype_val hY_closed _ c.last.is_closed'
@@ -324,15 +301,16 @@ lemma chain_restriction_to_open_cover {X : Type*} [TopologicalSpace X]
 
   have h_strict_mono : StrictMono d_fun := by
     intro i j h_lt_ij
-    simp_rw [IrreducibleCloseds.lt_iff_subset, d_fun]
+    simp_rw [← SetLike.coe_ssubset_coe, d_fun]
     let Zᵢ := (c.toFun i).carrier
     let Zⱼ := (c.toFun j).carrier
     have h_c_mono : StrictMono c.toFun := Fin.strictMono_iff_lt_succ.mpr c.step
     have h_lt_Z : c.toFun i < c.toFun j := h_c_mono h_lt_ij
-    have h_Z_ssubset : Zᵢ ⊂ Zⱼ := IrreducibleCloseds.lt_iff_subset.mp h_lt_Z
+    have h_Z_ssubset : Zᵢ ⊂ Zⱼ := SetLike.coe_ssubset_coe.mpr h_lt_Z
     rw [ssubset_iff_subset_ne]
     constructor
-    · rw [Subtype.preimage_val_subset_preimage_val_iff]
+    · simp only [IrreducibleCloseds.coe_mk]
+      rw [Subtype.preimage_val_subset_preimage_val_iff]
       refine inter_subset_inter_right U ?_
       exact subset_of_ssubset (h_c_mono h_lt_ij)
     · intro h_inter_eq
@@ -346,6 +324,7 @@ lemma chain_restriction_to_open_cover {X : Type*} [TopologicalSpace X]
           h_nonempty_inter_compl_Zᵢ h_nonempty_inter_U
       have h_inter_empty : (Zⱼ \ Zᵢ) ∩ U = ∅ := by
         rw [Set.diff_eq_compl_inter, Set.inter_assoc, Set.inter_comm]
+        change (Subtype.val ⁻¹' Zᵢ) = (Subtype.val ⁻¹' Zⱼ) at h_inter_eq
         rw [Subtype.preimage_coe_eq_preimage_coe_iff, Set.inter_comm U _,
           Set.inter_comm U _] at h_inter_eq
         change Zᵢ ∩ U = Zⱼ ∩ U at h_inter_eq
@@ -520,7 +499,7 @@ theorem topological_dim_irreducible_components (X : Type*) [TopologicalSpace X] 
       }
       have h_d_strict_mono : StrictMono d_fun := by
         intro i j h_lt
-        rw [IrreducibleCloseds.lt_iff_subset, ssubset_iff_subset_ne]
+        rw [← SetLike.coe_ssubset_coe, ssubset_iff_subset_ne]
         constructor
         · change (Subtype.val ⁻¹' (c.toFun i).carrier) ⊆
             (Subtype.val ⁻¹' (c.toFun j).carrier)
@@ -530,6 +509,7 @@ theorem topological_dim_irreducible_components (X : Type*) [TopologicalSpace X] 
           exact Set.preimage_mono h_c_subset
         · intro h_eq
           have h_carriers_eq : (c.toFun i).carrier = (c.toFun j).carrier := by
+            simp only [d_fun, IrreducibleCloseds.coe_mk] at h_eq
             apply (preimage_eq_preimage' _ _).mp h_eq
             · rw [Subtype.range_val]
               exact h_chain_in_Y i
