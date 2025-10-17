@@ -55,7 +55,7 @@ lake build
 Lean-AG/
 ├── GWchap5/                         # Main formalization directory
 │   ├── gw_sect5-3.lean             # Topological Krull dimension theory (675 lines)
-│   └── IrredClosedSubscheme.lean   # Reduced closed subscheme construction (133 lines)
+│   └── RedClosedSubscheme.lean   # Reduced closed subscheme construction (133 lines)
 ├── GWchap5.lean                    # Root module imports
 ├── lakefile.toml                   # Lake build configuration
 ├── lean-toolchain                  # Lean version specification
@@ -71,7 +71,7 @@ Lean-AG/
   - Complete proof of Lemma 5.7 (Görtz-Wedhorn)
   - Scheme dimension characterization via local rings
 
-- **[`GWchap5/IrredClosedSubscheme.lean`](GWchap5/IrredClosedSubscheme.lean)**: Scheme-theoretic constructions
+- **[`GWchap5/RedClosedSubscheme.lean`](GWchap5/RedClosedSubscheme.lean)**: Scheme-theoretic constructions
   - Reduced closed subscheme construction for closed subsets
   - Proof that the construction yields a reduced scheme
   - Supporting infrastructure for scheme theory
